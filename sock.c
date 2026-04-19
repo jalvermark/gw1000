@@ -267,14 +267,13 @@ int main(int argc, char **argv)
         short_int=(void *)(&buf[f+1]);
         f+=sizeof(short);
         t=(float)bswap16(*short_int)/10;
+          t=(float)bswap16(*short_int)/10*1.94384;
         printf("WindGust: %.01f\n",t);
         break;
       case 0xd:
         short_int=(void *)(&buf[f+1]);
         f+=sizeof(short);
         t=(float)bswap16(*short_int)/10;
-        if(knots)
-          t=(float)bswap16(*short_int)/10*1.94384;
         printf("RainRate: %.01f\n",t);
         break;
       case 0xe:
