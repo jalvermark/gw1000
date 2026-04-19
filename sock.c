@@ -27,7 +27,7 @@ double calculate_dew_point(double T, double RH)
 
 int main(int argc, char **argv)
 {
-  int s,ch,rain=0,battsig=0,exitval=0,debug=0;
+  int s,ch,rain=0,battsig=0,exitval=0,debug=0,all=0;
   short *msglen;
   struct sockaddr_in sin;
   char cmd[5];
@@ -42,7 +42,7 @@ int main(int argc, char **argv)
   //tcptimeout.tv_usec=0;
 
 
-  while ((ch = getopt(argc, argv, "d:bri:")) != -1)
+  while ((ch = getopt(argc, argv, "d:bri:a")) != -1)
   {
     switch(ch)
     {
@@ -55,6 +55,9 @@ int main(int argc, char **argv)
       case 'b':
         battsig=1;
         break;
+      case 'a':
+        all=1;
+        break;
       case 'd':
         debug=atoi(optarg);
         break;
@@ -65,6 +68,8 @@ int main(int argc, char **argv)
   }
 
   // printf("host: %s\n",host);
+
+  start:
 
   s=socket(PF_INET,SOCK_STREAM,0);
 
@@ -422,7 +427,7 @@ int main(int argc, char **argv)
   if (outT > -400 && outH > -400)
     printf("OutDewPoint: %.01f\n",calculate_dew_point(outT,outH));
 
-battsig:
+  battsig:
   if(!battsig) goto end;
   // printf("batt\n");
 
@@ -484,7 +489,16 @@ battsig:
     }
   }
 
-end:
+  end:
+
+  if(all)
+  {
+    rain=1;
+    close(s);
+    sum=0;
+    all=0;
+    goto start;
+  }
 
   if(debug==1)
   {
