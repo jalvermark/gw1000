@@ -27,7 +27,7 @@ double calculate_dew_point(double T, double RH)
 
 int main(int argc, char **argv)
 {
-  int s,ch,rain=0,battsig=0,exitval=0,debug=0,all=0;
+  int s,ch,rain=0,battsig=0,exitval=0,debug=0,all=0,knots=0;
   short *msglen;
   struct sockaddr_in sin;
   char cmd[5];
@@ -42,7 +42,7 @@ int main(int argc, char **argv)
   //tcptimeout.tv_usec=0;
 
 
-  while ((ch = getopt(argc, argv, "d:bri:a")) != -1)
+  while ((ch = getopt(argc, argv, "d:bri:ak")) != -1)
   {
     switch(ch)
     {
@@ -57,6 +57,9 @@ int main(int argc, char **argv)
         break;
       case 'a':
         all=1;
+        break;
+      case 'k':
+        knots=1;
         break;
       case 'd':
         debug=atoi(optarg);
@@ -256,6 +259,8 @@ int main(int argc, char **argv)
         short_int=(void *)(&buf[f+1]);
         f+=sizeof(short);
         t=(float)bswap16(*short_int)/10;
+        if(knots)
+          t=(float)bswap16(*short_int)/10*1.94384;
         printf("WindSpeed: %.01f\n",t);
         break;
       case 0xc:
