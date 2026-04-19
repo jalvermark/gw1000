@@ -10,6 +10,7 @@
 #include <sys/types.h>
 #include <errno.h>
 #include <math.h>
+#include <libxo/xo.h>
 
 double calculate_dew_point(double T, double RH)
 {

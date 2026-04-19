@@ -1,4 +1,4 @@
-CFLAGS=-Wall -lm
+CFLAGS=-Wall -lm -lxo
 
 PROGS=req dewpoint decode sock battsig
 
