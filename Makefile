@@ -1,6 +1,6 @@
 CFLAGS=-Wall -lm -lxo
 
-PROGS=req dewpoint decode sock battsig
+PROGS=req dewpoint decode getwx battsig
 
 ALL: $(PROGS)
 
@@ -13,6 +13,6 @@ dewpoint: dewpoint.c
 
 decode: decode.c
 
-sock: sock.c
+getwx: getwx.c
 
 battsig: battsig.c
