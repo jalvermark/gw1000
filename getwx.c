@@ -11,6 +11,7 @@
 #include <errno.h>
 #include <math.h>
 #include <libxo/xo.h>
+#include <time.h>
 
 double calculate_dew_point(double T, double RH)
 {
@@ -25,12 +26,39 @@ double calculate_dew_point(double T, double RH)
   return (b * gamma) / (a - gamma);
 }
 
+struct weatherData
+{
+  double InTemp;
+  double InHumi;
+  double InDewPoint;
+  double OutTemp;
+  double OutHumi;
+  double OutDewPoint;
+  float RelBaro;
+  float AbsBaro;
+  short WindDir;
+  float WindSpeed;
+  float WindGust;
+  float WindDayMax;
+  float Light;
+  float UVLight;
+  char UVIndex;
+  float PRainRate;
+  float PRainDay;
+  float PRainWeek;
+  float PRainMonth;
+  float PRainYear;
+  float PRainEvent;
+};
+
+
 
 int main(int argc, char **argv)
 {
-  int s,ch,rain=0,battsig=0,exitval=0,debug=0,all=0,knots=0;
+  int s,ch,rain=0,battsig=0,exitval=0,debug=0,all=0,knots=0,csv=0,csva=0;
   short *msglen;
   struct sockaddr_in sin;
+  struct weatherData wd;
   char cmd[5];
   unsigned char buf[1024],sum=0;
   char *host;
@@ -38,12 +66,16 @@ int main(int argc, char **argv)
   double inT=-400,inH=-400,outT=-400,outH=-400;
   //struct timeval tcptimeout;
   u_int tcptimeout=5;
+  time_t t;
+  struct tm *tmp;
+  char MY_TIME[50];
+  time(&t);
 
   //tcptimeout.tv_sec=5;
   //tcptimeout.tv_usec=0;
 
 
-  while ((ch = getopt(argc, argv, "d:bri:ak")) != -1)
+  while ((ch = getopt(argc, argv, "d:bri:akcC")) != -1)
   {
     switch(ch)
     {
@@ -61,6 +93,14 @@ int main(int argc, char **argv)
         break;
       case 'k':
         knots=1;
+        break;
+      case 'c':
+        csv=1;
+        all=1;
+        break;
+      case 'C':
+        csva=1;
+        all=1;
         break;
       case 'd':
         debug=atoi(optarg);
@@ -222,39 +262,57 @@ int main(int argc, char **argv)
         f+=sizeof(short);
         t=(float)(short)bswap16(*short_int)/10;
         inT=(double)t;
-        printf("InTemp: %.01f\n",t);
+        wd.InTemp=inT;
+        if(!csv)
+          printf("InTemp: %.01f\n",t);
         break;
       case 0x2:
         short_int=(void *)(&buf[f+1]);
         f+=sizeof(short);
         t=(float)(short)bswap16(*short_int)/10;
         outT=(double)t;
-        printf("OutTemp: %.01f\n",t);
+        wd.OutTemp=outT;
+        if(!csv)
+          printf("OutTemp: %.01f\n",t);
         break;
       case 0x6:
         inH=(double)buf[f+1];
-        printf("InHumi: %d\n",(char) buf[++f]);
+        wd.InHumi=inH;
+        if(!csv)
+          printf("InHumi: %d\n",(char) buf[++f]);
+        else
+          f++;
         break;
       case 0x7:
         outH=(double)buf[f+1];
-        printf("OutHumi: %d\n",(char) buf[++f]);
+        wd.OutHumi=outH;
+        if(!csv)
+          printf("OutHumi: %d\n",(char) buf[++f]);
+        else
+          f++;
         break;
       case 0x8:
         short_int=(void *)(&buf[f+1]);
         f+=sizeof(short);
         t=(float)bswap16(*short_int)/10;
-        printf("RelBaro: %.01f\n",t);
+        wd.RelBaro=t;
+        if(!csv)
+          printf("RelBaro: %.01f\n",t);
         break;
       case 0x9:
         short_int=(void *)(&buf[f+1]);
         f+=sizeof(short);
         t=(float)bswap16(*short_int)/10;
-        printf("AbsBaro: %.01f\n",t);
+        wd.AbsBaro=t;
+        if(!csv)
+          printf("AbsBaro: %.01f\n",t);
         break;
       case 0xa:
         short_int=(void *)(&buf[f+1]);
         f+=sizeof(short);
-        printf("WindDir: %d\n",bswap16(*short_int));
+        wd.WindDir=bswap16(*short_int);
+        if(!csv)
+          printf("WindDir: %d\n",bswap16(*short_int));
         break;
       case 0xb:
         short_int=(void *)(&buf[f+1]);
@@ -262,14 +320,19 @@ int main(int argc, char **argv)
         t=(float)bswap16(*short_int)/10;
         if(knots)
           t=(float)bswap16(*short_int)/10*1.94384;
-        printf("WindSpeed: %.01f\n",t);
+        wd.WindSpeed=t;
+        if(!csv)
+          printf("WindSpeed: %.01f\n",t);
         break;
       case 0xc:
         short_int=(void *)(&buf[f+1]);
         f+=sizeof(short);
         t=(float)bswap16(*short_int)/10;
+        if(knots)
           t=(float)bswap16(*short_int)/10*1.94384;
-        printf("WindGust: %.01f\n",t);
+        wd.WindGust=t;
+        if(!csv)
+          printf("WindGust: %.01f\n",t);
         break;
       case 0xd:
         short_int=(void *)(&buf[f+1]);
@@ -337,16 +400,22 @@ int main(int argc, char **argv)
         normal_int=(void *)(&buf[f+1]);
         f+=sizeof(int);
         t=(float)bswap32(*normal_int)/10;
-        printf("Light: %.01f\n",t);
+        wd.Light=t;
+        if(!csv)
+          printf("Light: %.01f\n",t);
         break;
       case 0x16:
         short_int=(void *)(&buf[f+1]);
         f+=sizeof(short);
         t=(float)bswap16(*short_int)/10;
-        printf("UVLight: %.01f\n",t);
+        wd.UVLight=t;
+        if(!csv)
+          printf("UVLight: %.01f\n",t);
         break;
       case 0x17:
-        printf("UVIndex: %d\n",(char) buf[++f]);
+        wd.UVIndex=(char) buf[++f];
+        if(!csv)
+          printf("UVIndex: %d\n",(char) buf[f]);
         break;
       case 0x19:
         short_int=(void *)(&buf[f+1]);
@@ -354,32 +423,41 @@ int main(int argc, char **argv)
         t=(float)bswap16(*short_int)/10;
         if(knots)
           t=(float)bswap16(*short_int)/10*1.94384;
-        printf("WindDayMax: %.01f\n",t);
+        wd.WindDayMax=t;
+        if(!csv)
+          printf("WindDayMax: %.01f\n",t);
         break;
       case 0x6c:
         normal_int=(void *)(&buf[f+1]);
         f+=sizeof(int);
-        printf("HeapFree: %d\n",bswap32(*normal_int));
+        if(!csv)
+          printf("HeapFree: %d\n",bswap32(*normal_int));
         break;
       case 0x7a:
-        printf("Unknown 7a: -later-\n");
+        if(!csv)
+          printf("Unknown 7a: -later-\n");
         f++;
         break;
       case 0x7b:
-        printf("Unknown 7b: -later-\n");
+        if(!csv)
+          printf("Unknown 7b: -later-\n");
         f++;
         break;
       case 0x80:
         short_int=(void *)(&buf[f+1]);
         f+=sizeof(short);
         t=(float)bswap16(*short_int)/10;
-        printf("PRainRate: %.01f\n",t);
+        wd.PRainRate=t;
+        if(!csv)
+          printf("PRainRate: %.01f\n",t);
         break;
       case 0x81:
         short_int=(void *)(&buf[f+1]);
         f+=sizeof(short);
         t=(float)bswap16(*short_int)/10;
-        printf("PRainEvent: %.01f\n",t);
+        wd.PRainEvent=t;
+        if(!csv)
+          printf("PRainEvent: %.01f\n",t);
         break;
       case 0x82:
         short_int=(void *)(&buf[f+1]);
@@ -391,25 +469,33 @@ int main(int argc, char **argv)
         normal_int=(void *)(&buf[f+1]);
         f+=sizeof(int);
         t=(float)bswap32(*normal_int)/10;
-        printf("PRainDay: %.01f\n",t);
+        wd.PRainDay=t;
+        if(!csv)
+          printf("PRainDay: %.01f\n",t);
         break;
       case 0x84:
         normal_int=(void *)(&buf[f+1]);
         f+=sizeof(int);
         t=(float)bswap32(*normal_int)/10;
-        printf("PRainWeek: %.01f\n",t);
+        wd.PRainWeek=t;
+        if(!csv)
+          printf("PRainWeek: %.01f\n",t);
         break;
       case 0x85:
         normal_int=(void *)(&buf[f+1]);
         f+=sizeof(int);
         t=(float)bswap32(*normal_int)/10;
-        printf("PRainMonth: %.01f\n",t);
+        wd.PRainMonth=t;
+        if(!csv)
+          printf("PRainMonth: %.01f\n",t);
         break;
       case 0x86:
         normal_int=(void *)(&buf[f+1]);
         f+=sizeof(int);
         t=(float)bswap32(*normal_int)/10;
-        printf("PRainYear: %.01f\n",t);
+        wd.PRainYear=t;
+        if(!csv)
+          printf("PRainYear: %.01f\n",t);
         break;
       case 0x87:
         for(int item=0; item<10; item++)
@@ -417,11 +503,13 @@ int main(int argc, char **argv)
           short_int=(void *)(&buf[f+1]);
           f+=sizeof(short);
           t=(float)bswap16(*short_int)/100;
-          printf("PGain%02d: %.02f\n",item+1,t);
+          if(!csv)
+            printf("PGain%02d: %.02f\n",item+1,t);
         }
         break;
       case 0x88:
-        printf("PRSTTime: -later-\n");
+        if(!csv)
+          printf("PRSTTime: -later-\n");
         f+=3;
         break;
 
@@ -432,9 +520,28 @@ int main(int argc, char **argv)
     }
   } 
   if (inT > -400 && inH > -400)
-    printf("InDewPoint: %.01f\n",calculate_dew_point(inT,inH));
+  {
+    wd.InDewPoint=calculate_dew_point(inT,inH);
+    if(!csv)
+      printf("InDewPoint: %.01f\n",calculate_dew_point(inT,inH));
+  }
   if (outT > -400 && outH > -400)
-    printf("OutDewPoint: %.01f\n",calculate_dew_point(outT,outH));
+  {
+    wd.OutDewPoint=calculate_dew_point(outT,outH);
+    if(!csv)
+      printf("OutDewPoint: %.01f\n",calculate_dew_point(outT,outH));
+  }
+
+  if(debug==1)
+  {
+    for(int bufpos=0; bufpos<(readlen+4); bufpos++)
+    {
+      if(bufpos % 8 == 0)
+        printf("\n");
+      printf("%02x ",buf[bufpos]);
+    }
+    printf("\n");
+  }
 
   battsig:
   if(!battsig) goto end;
@@ -509,17 +616,35 @@ int main(int argc, char **argv)
     goto start;
   }
 
-  if(debug==1)
+  if(csv||csva)
   {
-    for(int bufpos=0; bufpos<(readlen+4); bufpos++)
-    {
-      if(bufpos % 8 == 0)
-        printf("\n");
-      printf("%02x ",buf[bufpos]);
-    }
+    tmp=localtime(&t);
+    strftime(MY_TIME, sizeof(MY_TIME),"%Y-%m-%dT%H:%M:%S%z",tmp);
+    printf("%s,",MY_TIME);
+    printf("%.01f,",wd.InTemp);
+    printf("%d,",(int)wd.InHumi);
+    printf("%.01f,",wd.InDewPoint);
+    printf("%.01f,",wd.OutTemp);
+    printf("%d,",(int)wd.OutHumi);
+    printf("%.01f,",wd.OutDewPoint);
+    printf("%.01f,",wd.RelBaro);
+    printf("%.01f,",wd.AbsBaro);
+    printf("%d,",wd.WindDir);
+    printf("%.01f,",wd.WindSpeed);
+    printf("%.01f,",wd.WindGust);
+    printf("%.01f,",wd.WindDayMax);
+    printf("%.01f,",wd.Light);
+    printf("%.01f,",wd.UVLight);
+    printf("%d,",wd.UVIndex);
+    printf("%.01f,",wd.PRainRate);
+    printf("%.01f,",wd.PRainDay);
+    printf("%.01f,",wd.PRainWeek);
+    printf("%.01f,",wd.PRainMonth);
+    printf("%.01f,",wd.PRainYear);
+    printf("%.01f",wd.PRainEvent);
+
     printf("\n");
   }
-
   if(debug>1)
     exitval=debug;
 
