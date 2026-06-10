@@ -142,8 +142,18 @@ if(rain_last_30_sum > 0):
         metar+=" RERA"    
     
 
-# temp/dewpoint (needs to handle negatives!
-metar+=f" {round(wxdata[-1][4]):02d}/{round(wxdata[-1][6]):02d}"
+# temp/dewpoint
+metar+=" "
+
+if (round(wxdata[-1][4]) < 0):
+    metar+="M"
+
+metar+=f"{abs(round(wxdata[-1][4])):02d}/"
+
+if (round(wxdata[-1][6]) < 0):
+    metar+="M"
+
+metar+=f"{abs(round(wxdata[-1][6])):02d}"
 
 # QHN
 metar+=f" Q{math.floor(wxdata[-1][7])}"
