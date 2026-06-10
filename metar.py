@@ -1,7 +1,6 @@
 #!/usr/bin/env python3.11
 import csv
-from datetime import datetime
-from datetime import timedelta
+from datetime import datetime,timedelta,timezone
 import math
 
 wxlogfile="/home/jakob/gw1000/wxlog.csv"
@@ -23,10 +22,12 @@ def filter_last_x_minutes_native(data_list,x):
         return []
         
     # Find the latest timestamp from the first item of each row
-    latest_time = max(row[0] for row in data_list)
+    #latest_time = max(row[0] for row in data_list)
+    
     
     # Define the minute threshold window
-    cutoff_time = latest_time - timedelta(minutes=x)
+    #cutoff_time = latest_time - timedelta(minutes=x)
+    cutoff_time = datetime.now(timezone.utc) - timedelta(minutes=x)
     
     # Filter and keep rows that fall within the last 2 minutes
     return [row for row in data_list if row[0] >= cutoff_time]
@@ -61,9 +62,12 @@ def calculate_wind_averages_native(filtered_list):
     # Passing -1 to round() targets the tens place
     final_direction = int(round(avg_dir_deg, -1))
     
-    # Keep direction within 0-360 boundaries if it rounds up to 360
-    if final_direction == 360:
-        final_direction = 0
+    ### Keep direction within 0-360 boundaries if it rounds up to 360
+    #if final_direction == 360:
+    #    final_direction = 0
+    # METAR should N as 360
+    if final_direction == 0:
+        final_direction = 360
         
     # 2. Round speed UP to nearest whole number
     ceil_speed = math.ceil(avg_speed)
@@ -84,6 +88,10 @@ metar += now.strftime(' %d%H%MZ AUTO')
 wxdata=read_sensor_csv_native(wxlogfile)
 
 recent_2min_data = filter_last_x_minutes_native(wxdata,2)
+print("len: "+str(len(recent_2min_data)))
+if(len(recent_2min_data) < 10):
+    print(adid+now.strftime(' %d%H%MZ METAR U/S'))
+    exit(1)
 recent_10min_data = filter_last_x_minutes_native(wxdata,10)
 recent_30min_data = filter_last_x_minutes_native(wxdata,30)
 
