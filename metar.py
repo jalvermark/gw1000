@@ -114,7 +114,7 @@ print(f"Rain sum 30 {rain_last_30_sum}")
 
 # wind data
 avg_dir, avg_spd = calculate_wind_averages_native(recent_2min_data)
-if(avg_spd == 0):
+if(int(avg_spd) < 1):
     metar+="000000KT"
 else:
     if(int(avg_spd) < 5):
