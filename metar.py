@@ -69,6 +69,8 @@ def calculate_wind_averages_native(filtered_list):
     if final_direction == 0:
         final_direction = 360
         
+    # Zero-pad direction
+    final_direction_str = f"{final_direction:03d}"
     # 2. Round speed UP to nearest whole number
     ceil_speed = math.ceil(avg_speed)
     
@@ -76,7 +78,7 @@ def calculate_wind_averages_native(filtered_list):
     # The :02d format specifies a decimal integer, 2 characters wide, padded with zeros
     final_speed_str = f"{ceil_speed:02d}"
 
-    return final_direction, final_speed_str
+    return final_direction_str, final_speed_str
     
 #    return avg_dir_deg, avg_speed
 
